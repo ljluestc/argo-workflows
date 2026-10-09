@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -1060,4 +1061,53 @@ func TestStepsWhenFalseSkipsDropPass(t *testing.T) {
 	}
 	assert.NotEqual(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 	assert.NotEqual(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+}
+
+func mustParseItem(t *testing.T, s string) wfv1.Item {
+	t.Helper()
+	item, err := wfv1.ParseItem(s)
+	require.NoError(t, err)
+	return item
+}
+
+// TestResolveItems ensures steps and DAG tasks share the same item resolution behaviour.
+func TestResolveItems(t *testing.T) {
+	count := intstr.FromInt32(2)
+	tests := []struct {
+		name    string
+		task    wfv1.Task
+		want    []string
+		wantErr string
+	}{
+		{name: "step withItems", task: &wfv1.WorkflowStep{WithItems: []wfv1.Item{mustParseItem(t, `"a"`)}}, want: []string{`"a"`}},
+		{name: "task withItems", task: &wfv1.DAGTask{WithItems: []wfv1.Item{mustParseItem(t, `"a"`)}}, want: []string{`"a"`}},
+		{name: "step withParam", task: &wfv1.WorkflowStep{WithParam: `["x","y"]`}, want: []string{`"x"`, `"y"`}},
+		{name: "task withParam", task: &wfv1.DAGTask{WithParam: `["x","y"]`}, want: []string{`"x"`, `"y"`}},
+		{name: "task withSequence", task: &wfv1.DAGTask{WithSequence: &wfv1.Sequence{Count: &count}}, want: []string{`"0"`, `"1"`}},
+		{name: "step invalid withParam", task: &wfv1.WorkflowStep{WithParam: `not-json`}, wantErr: "withParam value could not be parsed as a JSON list"},
+		{name: "task invalid withParam", task: &wfv1.DAGTask{WithParam: `not-json`}, wantErr: "withParam value could not be parsed as a JSON list"},
+		{name: "step invalid withParam skipped by when", task: &wfv1.WorkflowStep{WithParam: `not-json`, When: "false"}},
+		{name: "task invalid withParam skipped by when", task: &wfv1.DAGTask{WithParam: `not-json`, When: "false"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			items, err := resolveItems(tt.task)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			got := make([]string, 0, len(items))
+			for _, item := range items {
+				b, err := item.MarshalJSON()
+				require.NoError(t, err)
+				got = append(got, string(b))
+			}
+			if len(tt.want) == 0 {
+				assert.Empty(t, got)
+			} else {
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
 }

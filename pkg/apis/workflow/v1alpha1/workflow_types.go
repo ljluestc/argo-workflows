@@ -1865,20 +1865,32 @@ func (lch *LifecycleHook) WithArgs(args Arguments) *LifecycleHook {
 	return lch1
 }
 
-var _ TemplateReferenceHolder = &WorkflowStep{}
+var _ Task = &WorkflowStep{}
+
+func hasExitHook(hooks LifecycleHooks, onExit string) bool {
+	return (hooks != nil && hooks.HasExitHook()) || onExit != ""
+}
+
+func getExitHook(hooks LifecycleHooks, onExit string, args Arguments) *LifecycleHook {
+	if !hasExitHook(hooks, onExit) {
+		return nil
+	}
+	if onExit != "" {
+		return &LifecycleHook{Template: onExit, Arguments: args}
+	}
+	return hooks.GetExitHook().WithArgs(args)
+}
+
+func shouldExpand(withItems []Item, withParam string, withSequence *Sequence) bool {
+	return len(withItems) != 0 || withParam != "" || withSequence != nil
+}
 
 func (s *WorkflowStep) HasExitHook() bool {
-	return (s.Hooks != nil && s.Hooks.HasExitHook()) || s.OnExit != ""
+	return hasExitHook(s.Hooks, s.OnExit)
 }
 
 func (s *WorkflowStep) GetExitHook(args Arguments) *LifecycleHook {
-	if !s.HasExitHook() {
-		return nil
-	}
-	if s.OnExit != "" {
-		return &LifecycleHook{Template: s.OnExit, Arguments: args}
-	}
-	return s.Hooks.GetExitHook().WithArgs(args)
+	return getExitHook(s.Hooks, s.OnExit, args)
 }
 
 func (s *WorkflowStep) GetTemplate() *Template {
@@ -1893,8 +1905,28 @@ func (s *WorkflowStep) GetTemplateRef() *TemplateRef {
 	return s.TemplateRef
 }
 
+func (s *WorkflowStep) GetArguments() Arguments {
+	return s.Arguments
+}
+
+func (s *WorkflowStep) GetWhen() string {
+	return s.When
+}
+
+func (s *WorkflowStep) GetWithItems() []Item {
+	return s.WithItems
+}
+
+func (s *WorkflowStep) GetWithParam() string {
+	return s.WithParam
+}
+
+func (s *WorkflowStep) GetWithSequence() *Sequence {
+	return s.WithSequence
+}
+
 func (s *WorkflowStep) ShouldExpand() bool {
-	return len(s.WithItems) != 0 || s.WithParam != "" || s.WithSequence != nil
+	return shouldExpand(s.WithItems, s.WithParam, s.WithSequence)
 }
 
 // Sequence expands a workflow step into numeric range
@@ -3691,20 +3723,14 @@ func (t *DAGTask) IsWorkflowStep() bool {
 	return false
 }
 
-var _ TemplateReferenceHolder = &DAGTask{}
+var _ Task = &DAGTask{}
 
 func (t *DAGTask) GetExitHook(args Arguments) *LifecycleHook {
-	if !t.HasExitHook() {
-		return nil
-	}
-	if t.OnExit != "" {
-		return &LifecycleHook{Template: t.OnExit, Arguments: args}
-	}
-	return t.Hooks.GetExitHook().WithArgs(args)
+	return getExitHook(t.Hooks, t.OnExit, args)
 }
 
 func (t *DAGTask) HasExitHook() bool {
-	return (t.Hooks != nil && t.Hooks.HasExitHook()) || t.OnExit != ""
+	return hasExitHook(t.Hooks, t.OnExit)
 }
 
 func (t *DAGTask) GetTemplate() *Template {
@@ -3719,8 +3745,28 @@ func (t *DAGTask) GetTemplateRef() *TemplateRef {
 	return t.TemplateRef
 }
 
+func (t *DAGTask) GetArguments() Arguments {
+	return t.Arguments
+}
+
+func (t *DAGTask) GetWhen() string {
+	return t.When
+}
+
+func (t *DAGTask) GetWithItems() []Item {
+	return t.WithItems
+}
+
+func (t *DAGTask) GetWithParam() string {
+	return t.WithParam
+}
+
+func (t *DAGTask) GetWithSequence() *Sequence {
+	return t.WithSequence
+}
+
 func (t *DAGTask) ShouldExpand() bool {
-	return len(t.WithItems) != 0 || t.WithParam != "" || t.WithSequence != nil
+	return shouldExpand(t.WithItems, t.WithParam, t.WithSequence)
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time

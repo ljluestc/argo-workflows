@@ -931,29 +931,12 @@ func (d *dagContext) findLeafTaskNames(ctx context.Context, tasks []wfv1.DAGTask
 // expansion to work with the shouldExecute function. To address this we apply a trick, we try to expand, if we fail, we then
 // check shouldExecute, if shouldExecute returns false, we continue on as normal else error out
 func expandTask(ctx context.Context, task wfv1.DAGTask, globalScope map[string]any) ([]wfv1.DAGTask, error) {
-	var err error
-	var items []wfv1.Item
-	switch {
-	case len(task.WithItems) > 0:
-		items = task.WithItems
-	case task.WithParam != "":
-		err = json.Unmarshal([]byte(task.WithParam), &items)
-		if err != nil {
-			mustExec, mustExecErr := shouldExecute(task.When)
-			if mustExecErr != nil || mustExec {
-				return nil, argoerrors.Errorf(argoerrors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(task.WithParam), err)
-			}
-		}
-	case task.WithSequence != nil:
-		items, err = expandSequence(task.WithSequence)
-		if err != nil {
-			mustExec, mustExecErr := shouldExecute(task.When)
-			if mustExecErr != nil || mustExec {
-				return nil, err
-			}
-		}
-	default:
+	if !task.ShouldExpand() {
 		return []wfv1.DAGTask{task}, nil
+	}
+	items, err := resolveItems(&task)
+	if err != nil {
+		return nil, err
 	}
 
 	taskBytes, err := json.Marshal(task)

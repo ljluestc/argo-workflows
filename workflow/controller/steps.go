@@ -604,32 +604,15 @@ func (woc *wfOperationCtx) expandStepGroup(ctx context.Context, sgNodeName strin
 // expansion to work with the shouldExecute function. To address this we apply a trick, we try to expand, if we fail, we then
 // check shouldExecute, if shouldExecute returns false, we continue on as normal else error out
 func (woc *wfOperationCtx) expandStep(ctx context.Context, step wfv1.WorkflowStep, scope *wfScope) ([]wfv1.WorkflowStep, error) {
-	var err error
-	expandedStep := make([]wfv1.WorkflowStep, 0)
-	var items []wfv1.Item
-	switch {
-	case len(step.WithItems) > 0:
-		items = step.WithItems
-	case step.WithParam != "":
-		err = json.Unmarshal([]byte(step.WithParam), &items)
-		if err != nil {
-			mustExec, mustExecErr := shouldExecute(step.When)
-			if mustExecErr != nil || mustExec {
-				return nil, argoerrors.Errorf(argoerrors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(step.WithParam), err)
-			}
-		}
-	case step.WithSequence != nil:
-		items, err = expandSequence(step.WithSequence)
-		if err != nil {
-			mustExec, mustExecErr := shouldExecute(step.When)
-			if mustExecErr != nil || mustExec {
-				return nil, err
-			}
-		}
-	default:
+	if !step.ShouldExpand() {
 		// this should have been prevented in expandStepGroup()
 		return nil, argoerrors.InternalError("expandStep() was called with withItems and withParam empty")
 	}
+	items, err := resolveItems(&step)
+	if err != nil {
+		return nil, err
+	}
+	expandedStep := make([]wfv1.WorkflowStep, 0)
 
 	// these fields can be very large (>100m) and marshalling 10k x 100m = 6GB of memory used and
 	// very poor performance, so we just nil them out
@@ -657,6 +640,30 @@ func (woc *wfOperationCtx) expandStep(ctx context.Context, step wfv1.WorkflowSte
 		expandedStep = append(expandedStep, newStep)
 	}
 	return expandedStep, nil
+}
+
+// resolveItems returns the items a step or task fans out over. Errors resolving withParam or withSequence are
+// ignored when the task's when condition evaluates to false, since the task will be skipped anyway.
+func resolveItems(task wfv1.Task) ([]wfv1.Item, error) {
+	var items []wfv1.Item
+	var err error
+	switch {
+	case len(task.GetWithItems()) > 0:
+		return task.GetWithItems(), nil
+	case task.GetWithParam() != "":
+		if err = json.Unmarshal([]byte(task.GetWithParam()), &items); err != nil {
+			err = argoerrors.Errorf(argoerrors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(task.GetWithParam()), err)
+		}
+	case task.GetWithSequence() != nil:
+		items, err = expandSequence(task.GetWithSequence())
+	}
+	if err != nil {
+		mustExec, mustExecErr := shouldExecute(task.GetWhen())
+		if mustExecErr != nil || mustExec {
+			return nil, err
+		}
+	}
+	return items, nil
 }
 
 func (woc *wfOperationCtx) prepareDefaultMetricScope() (map[string]any, map[string]func() float64) {

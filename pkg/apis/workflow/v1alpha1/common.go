@@ -45,6 +45,30 @@ type TemplateReferenceHolder interface {
 	IsWorkflowStep() bool
 }
 
+// Task is the behaviour shared by WorkflowStep and DAGTask, so callers can handle either without duplicating logic.
+// The two remain distinct API types to preserve wire compatibility; see https://github.com/argoproj/argo-workflows/issues/1041.
+type Task interface {
+	TemplateReferenceHolder
+	// GetArguments returns the arguments passed to the referenced template.
+	GetArguments() Arguments
+	// GetWhen returns the conditional expression guarding execution. This may be empty.
+	GetWhen() string
+	// GetWithItems returns the static list of items to expand over. This may be nil.
+	GetWithItems() []Item
+	// GetWithParam returns the JSON list of items to expand over. This may be empty.
+	GetWithParam() string
+	// GetWithSequence returns the numeric sequence to expand over. This may be nil.
+	GetWithSequence() *Sequence
+	// ShouldExpand returns true if the task fans out over withItems, withParam, or withSequence.
+	ShouldExpand() bool
+	// ContinuesOn returns whether execution should proceed if the task finishes in the given phase.
+	ContinuesOn(phase NodePhase) bool
+	// HasExitHook returns true if the task has an exit hook, via hooks or the deprecated onExit.
+	HasExitHook() bool
+	// GetExitHook returns the exit hook with args applied, or nil if there is none.
+	GetExitHook(args Arguments) *LifecycleHook
+}
+
 // SubmitOpts are workflow submission options
 type SubmitOpts struct {
 	// Name overrides metadata.name
