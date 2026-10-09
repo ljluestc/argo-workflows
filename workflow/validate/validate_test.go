@@ -4191,3 +4191,70 @@ func TestPodResourceClaimsValidation(t *testing.T) {
 	err = validate(ctx, resourceClaimsOnStepsTemplate)
 	require.ErrorContains(t, err, "templates.main.resourceClaims is not supported for Steps templates, which do not create a pod")
 }
+
+var paramNamesWithSpaces = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: param-names-with-spaces-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: greeting text
+      value: hello
+  templates:
+  - name: main
+    steps:
+    - - name: gen
+        template: gen
+        arguments:
+          parameters:
+          - name: input message
+            value: "{{workflow.parameters.greeting text}}"
+    - - name: print
+        template: print
+        arguments:
+          parameters:
+          - name: input message
+            value: "{{steps.gen.outputs.parameters.output message}}"
+  - name: gen
+    inputs:
+      parameters:
+      - name: input message
+    outputs:
+      parameters:
+      - name: output message
+        valueFrom:
+          path: /tmp/out
+    container:
+      image: alpine
+      command: [sh, -c]
+      args: ["echo '{{inputs.parameters.input message}}' > /tmp/out"]
+  - name: print
+    inputs:
+      parameters:
+      - name: input message
+    container:
+      image: alpine
+      command: [echo]
+      args: ["{{=inputs.parameters['input message']}}"]
+`
+
+func TestParamNamesWithSpaces(t *testing.T) {
+	err := validate(logging.TestContext(t.Context()), paramNamesWithSpaces)
+	require.NoError(t, err)
+}
+
+func TestIsValidParameterName(t *testing.T) {
+	for _, name := range []string{"my param", "my_param-1", "a b c", "MY-PARAM-1"} {
+		assert.Empty(t, isValidParameterName(name), name)
+	}
+	for _, name := range []string{" leading", "trailing ", "double  space", "tab\tseparated", "param#1", ""} {
+		assert.NotEmpty(t, isValidParameterName(name), name)
+	}
+}
+
+func TestArtifactNamesStillRejectSpaces(t *testing.T) {
+	assert.NotEmpty(t, isValidParamOrArtifactName("my artifact"))
+}

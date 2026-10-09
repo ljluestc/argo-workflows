@@ -2626,7 +2626,7 @@ be cluster-scoped, so there is no namespace field.
 | description | [AnyString](#any-string)| `AnyString` |  | |  |  |
 | enum | [][AnyString](#any-string)| `[]AnyString` |  | | Enum holds a list of string values to choose from, for the actual value of the parameter </br>*Minimum items: 1.*|  |
 | globalName | string| `string` |  | | GlobalName exports an output parameter to the global scope, making it available as</br>workflow.outputs.parameters.XXXX and in workflow.status.outputs.parameters |  |
-| name | string| `string` |  | | Name is the parameter name </br>*Validation regex: `^[-a-zA-Z0-9_]+$`.*|  |
+| name | string| `string` |  | | Name is the parameter name. Words may be separated by single spaces, e.g. "my param". </br>*Validation regex: `^[-a-zA-Z0-9_]+( [-a-zA-Z0-9_]+)*$`.*|  |
 | value | [AnyString](#any-string)| `AnyString` |  | |  |  |
 | valueFrom | [ValueFrom](#value-from)| `ValueFrom` |  | |  |  |
 

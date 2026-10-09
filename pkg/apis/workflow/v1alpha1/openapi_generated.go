@@ -4993,7 +4993,7 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 				Properties: map[string]spec.Schema{
 					"name": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Name is the parameter name",
+							Description: "Name is the parameter name. Words may be separated by single spaces, e.g. \"my param\".",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",

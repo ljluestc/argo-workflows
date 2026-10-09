@@ -6493,7 +6493,7 @@
           "type": "string"
         },
         "name": {
-          "description": "Name is the parameter name",
+          "description": "Name is the parameter name. Words may be separated by single spaces, e.g. \"my param\".",
           "type": "string"
         },
         "value": {

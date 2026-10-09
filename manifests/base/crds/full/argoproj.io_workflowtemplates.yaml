@@ -2094,8 +2094,9 @@ spec:
                             workflow.outputs.parameters.XXXX and in workflow.status.outputs.parameters
                           type: string
                         name:
-                          description: Name is the parameter name
-                          pattern: ^[-a-zA-Z0-9_]+$
+                          description: Name is the parameter name. Words may be separated
+                            by single spaces, e.g. "my param".
+                          pattern: ^[-a-zA-Z0-9_]+( [-a-zA-Z0-9_]+)*$
                           type: string
                         value:
                           description: |-
@@ -5053,8 +5054,9 @@ spec:
                                   workflow.outputs.parameters.XXXX and in workflow.status.outputs.parameters
                                 type: string
                               name:
-                                description: Name is the parameter name
-                                pattern: ^[-a-zA-Z0-9_]+$
+                                description: Name is the parameter name. Words may
+                                  be separated by single spaces, e.g. "my param".
+                                pattern: ^[-a-zA-Z0-9_]+( [-a-zA-Z0-9_]+)*$
                                 type: string
                               value:
                                 description: |-
@@ -9132,7 +9134,7 @@ spec:
                                       globalName:
                                         type: string
                                       name:
-                                        pattern: ^[-a-zA-Z0-9_]+$
+                                        pattern: ^[-a-zA-Z0-9_]+( [-a-zA-Z0-9_]+)*$
                                         type: string
                                       value:
                                         type: string
@@ -9810,7 +9812,7 @@ spec:
                                             globalName:
                                               type: string
                                             name:
-                                              pattern: ^[-a-zA-Z0-9_]+$
+                                              pattern: ^[-a-zA-Z0-9_]+( [-a-zA-Z0-9_]+)*$
                                               type: string
                                             value:
                                               type: string
@@ -11963,7 +11965,7 @@ spec:
                             globalName:
                               type: string
                             name:
-                              pattern: ^[-a-zA-Z0-9_]+$
+                              pattern: ^[-a-zA-Z0-9_]+( [-a-zA-Z0-9_]+)*$
                               type: string
                             value:
                               type: string
@@ -12745,7 +12747,7 @@ spec:
                             globalName:
                               type: string
                             name:
-                              pattern: ^[-a-zA-Z0-9_]+$
+                              pattern: ^[-a-zA-Z0-9_]+( [-a-zA-Z0-9_]+)*$
                               type: string
                             value:
                               type: string
@@ -15674,7 +15676,7 @@ spec:
                                     globalName:
                                       type: string
                                     name:
-                                      pattern: ^[-a-zA-Z0-9_]+$
+                                      pattern: ^[-a-zA-Z0-9_]+( [-a-zA-Z0-9_]+)*$
                                       type: string
                                     value:
                                       type: string
@@ -16345,7 +16347,7 @@ spec:
                                           globalName:
                                             type: string
                                           name:
-                                            pattern: ^[-a-zA-Z0-9_]+$
+                                            pattern: ^[-a-zA-Z0-9_]+( [-a-zA-Z0-9_]+)*$
                                             type: string
                                           value:
                                             type: string
@@ -23701,8 +23703,10 @@ spec:
                                             workflow.outputs.parameters.XXXX and in workflow.status.outputs.parameters
                                           type: string
                                         name:
-                                          description: Name is the parameter name
-                                          pattern: ^[-a-zA-Z0-9_]+$
+                                          description: Name is the parameter name.
+                                            Words may be separated by single spaces,
+                                            e.g. "my param".
+                                          pattern: ^[-a-zA-Z0-9_]+( [-a-zA-Z0-9_]+)*$
                                           type: string
                                         value:
                                           description: |-
@@ -25119,8 +25123,9 @@ spec:
                                                 type: string
                                               name:
                                                 description: Name is the parameter
-                                                  name
-                                                pattern: ^[-a-zA-Z0-9_]+$
+                                                  name. Words may be separated by
+                                                  single spaces, e.g. "my param".
+                                                pattern: ^[-a-zA-Z0-9_]+( [-a-zA-Z0-9_]+)*$
                                                 type: string
                                               value:
                                                 description: |-
@@ -29300,8 +29305,9 @@ spec:
                                   workflow.outputs.parameters.XXXX and in workflow.status.outputs.parameters
                                 type: string
                               name:
-                                description: Name is the parameter name
-                                pattern: ^[-a-zA-Z0-9_]+$
+                                description: Name is the parameter name. Words may
+                                  be separated by single spaces, e.g. "my param".
+                                pattern: ^[-a-zA-Z0-9_]+( [-a-zA-Z0-9_]+)*$
                                 type: string
                               value:
                                 description: |-
@@ -30707,8 +30713,9 @@ spec:
                                   workflow.outputs.parameters.XXXX and in workflow.status.outputs.parameters
                                 type: string
                               name:
-                                description: Name is the parameter name
-                                pattern: ^[-a-zA-Z0-9_]+$
+                                description: Name is the parameter name. Words may
+                                  be separated by single spaces, e.g. "my param".
+                                pattern: ^[-a-zA-Z0-9_]+( [-a-zA-Z0-9_]+)*$
                                 type: string
                               value:
                                 description: |-
@@ -36740,8 +36747,10 @@ spec:
                                           workflow.outputs.parameters.XXXX and in workflow.status.outputs.parameters
                                         type: string
                                       name:
-                                        description: Name is the parameter name
-                                        pattern: ^[-a-zA-Z0-9_]+$
+                                        description: Name is the parameter name. Words
+                                          may be separated by single spaces, e.g.
+                                          "my param".
+                                        pattern: ^[-a-zA-Z0-9_]+( [-a-zA-Z0-9_]+)*$
                                         type: string
                                       value:
                                         description: |-
@@ -38124,8 +38133,10 @@ spec:
                                                 workflow.outputs.parameters.XXXX and in workflow.status.outputs.parameters
                                               type: string
                                             name:
-                                              description: Name is the parameter name
-                                              pattern: ^[-a-zA-Z0-9_]+$
+                                              description: Name is the parameter name.
+                                                Words may be separated by single spaces,
+                                                e.g. "my param".
+                                              pattern: ^[-a-zA-Z0-9_]+( [-a-zA-Z0-9_]+)*$
                                               type: string
                                             value:
                                               description: |-

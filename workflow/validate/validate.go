@@ -1378,9 +1378,12 @@ func validateWorkflowFieldNames(slice any) error {
 		}
 		var errs []string
 		t := reflect.TypeOf(item)
-		if t == reflect.TypeFor[wfv1.Parameter]() || t == reflect.TypeFor[wfv1.Artifact]() {
+		switch t {
+		case reflect.TypeFor[wfv1.Parameter]():
+			errs = isValidParameterName(name)
+		case reflect.TypeFor[wfv1.Artifact]():
 			errs = isValidParamOrArtifactName(name)
-		} else {
+		default:
 			errs = isValidWorkflowFieldName(name)
 		}
 		if len(errs) != 0 {
@@ -1689,6 +1692,9 @@ var (
 	// paramRegex matches a parameter. e.g. {{inputs.parameters.blah}}
 	paramRegex               = regexp.MustCompile(`{{[-a-zA-Z0-9]+(\.[-a-zA-Z0-9_]+)*}}`)
 	paramOrArtifactNameRegex = regexp.MustCompile(`^[-a-zA-Z0-9_]+$`)
+	// parameterNameRegex additionally allows single spaces between words. Leading/trailing spaces are rejected
+	// because template tags are trimmed, so such a parameter could never be referenced.
+	parameterNameRegex = regexp.MustCompile(`^[-a-zA-Z0-9_]+( [-a-zA-Z0-9_]+)*$`)
 	workflowFieldNameRegex   = regexp.MustCompile("^" + workflowFieldNameFmt + "$")
 	// placeholderFragmentRegex matches internal placeholder tokens injected by
 	// ProcessArgs during validation (e.g. "__argo__internal__placeholder-42").
@@ -1697,6 +1703,14 @@ var (
 
 func isParameter(p string) bool {
 	return paramRegex.MatchString(p)
+}
+
+func isValidParameterName(p string) []string {
+	var errs []string
+	if !parameterNameRegex.MatchString(p) {
+		return append(errs, "Parameter name must consist of alpha-numeric characters, '_' or '-', optionally separated by single spaces e.g. my_param_1, MY-PARAM-1, my param")
+	}
+	return errs
 }
 
 func isValidParamOrArtifactName(p string) []string {

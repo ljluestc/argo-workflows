@@ -2785,8 +2785,8 @@ definitions:
                 type: string
             name:
                 description: |-
-                    Name is the parameter name
-                    +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_]+$`
+                    Name is the parameter name. Words may be separated by single spaces, e.g. "my param".
+                    +kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_]+( [-a-zA-Z0-9_]+)*$`
                 type: string
             value:
                 $ref: '#/definitions/AnyString'
