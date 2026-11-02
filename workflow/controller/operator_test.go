@@ -14109,3 +14109,49 @@ func TestInferFailedReasonArtifactPluginSidecar(t *testing.T) {
 		})
 	}
 }
+
+var paramNameWithSpacesWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: param-name-with-spaces
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: workflow param
+      value: from-workflow
+  templates:
+  - name: main
+    inputs:
+      parameters:
+      - name: my message
+        value: "{{workflow.parameters.workflow param}}"
+    container:
+      image: alpine
+      command: [echo, "{{inputs.parameters.my message}}", "{{=inputs.parameters['my message']}}"]
+`
+
+// TestParamNameWithSpaces verifies parameters whose names contain spaces are substituted
+// into the pod via both simple tags and expressions.
+func TestParamNameWithSpaces(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(paramNameWithSpacesWf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+
+	ctx := logging.TestContext(t.Context())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	require.Len(t, pods.Items, 1)
+	for _, ctr := range pods.Items[0].Spec.Containers {
+		if ctr.Name == common.MainContainerName {
+			// the emissary wraps the user command after "--"
+			assert.Equal(t, []string{"--", "echo", "from-workflow", "from-workflow"}, ctr.Command[len(ctr.Command)-4:])
+			return
+		}
+	}
+	t.Fatal("main container not found")
+}

@@ -38,6 +38,15 @@ func Test_Replace(t *testing.T) {
 			})
 		})
 	})
+	t.Run("NameWithSpaces", func(t *testing.T) {
+		replaceMap := map[string]any{"inputs.parameters.my param": "bar"}
+		r, err := Replace(ctx, toJSONString("{{inputs.parameters.my param}}"), replaceMap, false)
+		require.NoError(t, err)
+		assert.Equal(t, toJSONString("bar"), r)
+		r, err = Replace(ctx, toJSONString("{{=inputs.parameters['my param']}}"), replaceMap, false)
+		require.NoError(t, err)
+		assert.Equal(t, toJSONString("bar"), r)
+	})
 	t.Run("Expression", func(t *testing.T) {
 		t.Run("Valid", func(t *testing.T) {
 			r, err := Replace(ctx, toJSONString("{{=foo}}"), map[string]any{"foo": "bar"}, false)

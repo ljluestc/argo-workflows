@@ -4191,3 +4191,113 @@ func TestPodResourceClaimsValidation(t *testing.T) {
 	err = validate(ctx, resourceClaimsOnStepsTemplate)
 	require.ErrorContains(t, err, "templates.main.resourceClaims is not supported for Steps templates, which do not create a pod")
 }
+
+var paramNamesWithSpaces = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: param-names-with-spaces-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: workflow param
+      value: hello
+  templates:
+  - name: main
+    steps:
+    - - name: produce
+        template: produce
+        arguments:
+          parameters:
+          - name: my message
+            value: "{{workflow.parameters.workflow param}}"
+    - - name: consume
+        template: consume
+        arguments:
+          parameters:
+          - name: in value
+            value: "{{steps.produce.outputs.parameters.out value}}"
+          - name: in expr
+            value: "{{=steps.produce.outputs.parameters['out value']}}"
+  - name: produce
+    inputs:
+      parameters:
+      - name: my message
+    container:
+      image: alpine
+      command: [sh, -c]
+      args: ["echo '{{inputs.parameters.my message}}' > /tmp/out"]
+    outputs:
+      parameters:
+      - name: out value
+        globalName: global out value
+        valueFrom:
+          path: /tmp/out
+  - name: consume
+    inputs:
+      parameters:
+      - name: in value
+      - name: in expr
+    container:
+      image: alpine
+      command: [echo, "{{inputs.parameters.in value}}", "{{inputs.parameters.in expr}}"]
+`
+
+func TestParamNamesWithSpaces(t *testing.T) {
+	err := validate(logging.TestContext(t.Context()), paramNamesWithSpaces)
+	require.NoError(t, err)
+}
+
+func TestIsValidParamName(t *testing.T) {
+	for _, name := range []string{"a", "my param", "my  param", "My-Param_1 two"} {
+		assert.Empty(t, isValidParamName(name), name)
+	}
+	for _, name := range []string{"", " leading", "trailing ", " ", "tab\tname", "new\nline", "dot.name", "param#1"} {
+		assert.NotEmpty(t, isValidParamName(name), name)
+	}
+}
+
+var artifactNameWithSpace = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: art-name-with-space-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    outputs:
+      artifacts:
+      - name: my artifact
+        path: /tmp/out
+    container:
+      image: alpine
+`
+
+func TestArtifactNameWithSpaceIsInvalid(t *testing.T) {
+	err := validate(logging.TestContext(t.Context()), artifactNameWithSpace)
+	require.ErrorContains(t, err, invalidErr)
+}
+
+var paramNameWithLeadingSpace = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: param-leading-space-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    inputs:
+      parameters:
+      - name: " leading"
+        value: x
+    container:
+      image: alpine
+`
+
+func TestParamNameWithLeadingSpaceIsInvalid(t *testing.T) {
+	err := validate(logging.TestContext(t.Context()), paramNameWithLeadingSpace)
+	require.ErrorContains(t, err, invalidErr)
+}

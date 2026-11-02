@@ -56,6 +56,12 @@ The tag is substituted with the result of evaluating the tag as an expression.
 Note that any hyphenated parameter names or step names will cause a parsing error. You can reference them by
 indexing into the parameter or step map, e.g. `inputs.parameters['my-param']` or `steps['my-step'].outputs.result`.
 
+### Parameter Names with Spaces
+
+Parameter names may contain spaces (but not leading or trailing spaces), e.g. `my param`.
+Reference them with a simple tag, `{{inputs.parameters.my param}}`, or by indexing in an expression, `{{=inputs.parameters['my param']}}`.
+Artifact names cannot contain spaces.
+
 [Learn more about the expression syntax](https://expr-lang.org/docs/language-definition).
 
 #### Examples

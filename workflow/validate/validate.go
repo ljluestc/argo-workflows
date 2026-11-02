@@ -1303,7 +1303,7 @@ func validateOutputs(scope map[string]any, globalParams map[string]string, tmpl 
 			}
 		}
 		if param.GlobalName != "" && !isParameter(param.GlobalName) {
-			errs := isValidParamOrArtifactName(param.GlobalName)
+			errs := isValidParamName(param.GlobalName)
 			if len(errs) > 0 {
 				return errors.Errorf(errors.CodeBadRequest, "%s.globalName: %s", paramRef, errs[0])
 			}
@@ -1378,9 +1378,12 @@ func validateWorkflowFieldNames(slice any) error {
 		}
 		var errs []string
 		t := reflect.TypeOf(item)
-		if t == reflect.TypeFor[wfv1.Parameter]() || t == reflect.TypeFor[wfv1.Artifact]() {
+		switch t {
+		case reflect.TypeFor[wfv1.Parameter]():
+			errs = isValidParamName(name)
+		case reflect.TypeFor[wfv1.Artifact]():
 			errs = isValidParamOrArtifactName(name)
-		} else {
+		default:
 			errs = isValidWorkflowFieldName(name)
 		}
 		if len(errs) != 0 {
@@ -1689,7 +1692,10 @@ var (
 	// paramRegex matches a parameter. e.g. {{inputs.parameters.blah}}
 	paramRegex               = regexp.MustCompile(`{{[-a-zA-Z0-9]+(\.[-a-zA-Z0-9_]+)*}}`)
 	paramOrArtifactNameRegex = regexp.MustCompile(`^[-a-zA-Z0-9_]+$`)
-	workflowFieldNameRegex   = regexp.MustCompile("^" + workflowFieldNameFmt + "$")
+	// paramNameRegex is paramOrArtifactNameRegex plus internal spaces. Leading/trailing
+	// spaces are rejected because template tags are whitespace-trimmed before lookup.
+	paramNameRegex         = regexp.MustCompile(`^[-a-zA-Z0-9_]+( +[-a-zA-Z0-9_]+)*$`)
+	workflowFieldNameRegex = regexp.MustCompile("^" + workflowFieldNameFmt + "$")
 	// placeholderFragmentRegex matches internal placeholder tokens injected by
 	// ProcessArgs during validation (e.g. "__argo__internal__placeholder-42").
 	placeholderFragmentRegex = regexp.MustCompile(regexp.QuoteMeta(template.PlaceholderPrefix) + `\d+`)
@@ -1705,6 +1711,16 @@ func isValidParamOrArtifactName(p string) []string {
 		return append(errs, "Parameter/Artifact name must consist of alpha-numeric characters, '_' or '-' e.g. my_param_1, MY-PARAM-1")
 	}
 	return errs
+}
+
+// isValidParamName is like isValidParamOrArtifactName but also allows spaces inside the
+// name (e.g. "my param"). Artifact names stay stricter because they end up in file
+// paths, volume subPaths, artifact repository keys and artifact download URLs.
+func isValidParamName(p string) []string {
+	if !paramNameRegex.MatchString(p) {
+		return []string{"Parameter name must consist of alpha-numeric characters, '_', '-' or ' ' (not leading or trailing) e.g. my_param_1, MY-PARAM-1, my param"}
+	}
+	return nil
 }
 
 const (
